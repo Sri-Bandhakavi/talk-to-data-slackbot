@@ -1,0 +1,42 @@
+name: users
+
+source:
+  type: postgres
+  table: users
+  connection:
+    host: dpg-d35pib0dl3ps7394mc4g-a.oregon-postgres.render.com
+    port: 5432
+    user: students
+    password: CohortApril2026
+    database: beam_neb0
+
+description: >
+  User signup and acquisition dataset.
+
+  Business rules and semantics:
+  - Each row represents a unique user.
+  - signup_date is the primary date field for signup trend analysis.
+  - country represents the user's signup region.
+  - device_type represents the signup platform.
+
+columns:
+
+  - name: user_id
+    type: integer
+    description: Unique identifier for the user
+
+  - name: signup_date
+    type: datetime
+    description: Date and time when the user signed up
+
+  - name: country
+    type: string
+    description: User country based on signup information
+    alias: region
+    group_by: true
+
+  - name: device_type
+    type: string
+    description: Device type used at signup
+    alias: platform
+    group_by: true

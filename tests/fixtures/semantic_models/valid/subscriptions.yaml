@@ -1,0 +1,34 @@
+name: subscriptions
+
+source:
+  type: postgres
+  table: subscriptions
+  connection:
+    host: localhost
+    port: 5432
+    user: test
+    password: test
+    database: testdb
+
+description: Test subscriptions dataset.
+
+relationships:
+  - from: user_id
+    to:
+      dataset: users
+      column: user_id
+
+columns:
+  - name: subscription_id
+    type: integer
+    description: Unique identifier for the subscription
+
+  - name: user_id
+    type: integer
+    description: Foreign key to users
+
+  - name: subscription_length_days
+    type: integer
+    description: Length of subscription in days
+    expression: >
+      EXTRACT(DAY FROM (COALESCE(end_date, CURRENT_DATE) - start_date))

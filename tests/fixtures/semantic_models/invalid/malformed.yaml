@@ -1,0 +1,15 @@
+name: users
+source:
+  type: postgres
+  table: users
+  connection:
+    host: localhost
+    port: 5432
+    user: test
+    password: test
+    database: testdb
+description: Broken YAML file
+columns:
+  - name: user_id
+    type: integer
+    description: [unclosed list

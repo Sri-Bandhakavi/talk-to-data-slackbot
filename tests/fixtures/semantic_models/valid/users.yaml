@@ -1,0 +1,24 @@
+name: users
+
+source:
+  type: postgres
+  table: users
+  connection:
+    host: localhost
+    port: 5432
+    user: test
+    password: test
+    database: testdb
+
+description: Test users dataset for signup analysis.
+
+columns:
+  - name: user_id
+    type: integer
+    description: Unique identifier for the user
+
+  - name: country
+    type: string
+    description: User country
+    alias: region
+    group_by: true

@@ -1,0 +1,52 @@
+name: payments
+
+source:
+  type: postgres
+  table: payments
+  connection:
+    host: dpg-d35pib0dl3ps7394mc4g-a.oregon-postgres.render.com
+    port: 5432
+    user: students
+    password: CohortApril2026
+    database: beam_neb0
+
+description: >
+  Subscription payment and revenue transaction dataset.
+
+  Business rules and semantics:
+  - Each row represents a payment transaction.
+  - payment_date is the primary date field for revenue analysis.
+  - amount_usd represents payment value in USD.
+  - method represents the payment method used.
+
+relationships:
+  - from: subscription_id
+    to:
+      dataset: subscriptions
+      column: subscription_id
+
+columns:
+
+  - name: payment_id
+    type: integer
+    description: Unique identifier for the payment
+
+  - name: subscription_id
+    type: integer
+    description: Foreign key linking to the subscriptions table
+
+  - name: payment_date
+    type: datetime
+    description: Date when the payment was made
+
+  - name: amount_usd
+    type: float
+    description: Payment amount in USD
+    alias: revenue
+
+  - name: method
+    type: string
+    description: Payment method used
+    alias: payment_method
+    group_by: true
+  
