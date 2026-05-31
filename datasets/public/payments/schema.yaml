@@ -12,27 +12,42 @@ description: 'Subscription payment and revenue transaction dataset.
 
   Business rules and semantics: - Each row represents a payment transaction. - payment_date
   is the primary date field for revenue analysis. - amount_usd represents payment
-  value in USD. - method represents the payment method used.
+  value in USD. - amount_usd is used for revenue analysis and revenue aggregation.
+  - method represents the payment method used.
+
+  Common business questions: - Total revenue - Revenue by subscription plan - Revenue
+  by user segment - Revenue by region - Revenue trends over time
+
+  This dataset is commonly joined to: - subscriptions via subscription_id - users
+  through subscriptions
 
 
   Join context:
 
-  Joins to subscriptions on subscription_id.'
+  subscription_id -> subscriptions.subscription_id'
 columns:
 - name: payment_id
   type: integer
   description: Unique identifier for the payment
 - name: subscription_id
   type: integer
-  description: Foreign key linking to the subscriptions table
+  description: 'Foreign key linking each payment transaction to a subscription record.
+
+    '
 - name: payment_date
   type: datetime
   description: Date when the payment was made
 - name: amount_usd
   type: float
-  description: Payment amount in USD
+  description: 'Payment amount in USD.
+
+    Used for: - total revenue calculations - revenue aggregation - revenue trend analysis
+    - revenue by plan - revenue by region
+
+    '
   alias: revenue
 - name: method
   type: string
-  description: Payment method used (groupable dimension)
+  description: "Payment method used for the transaction.\nTypical values: - card -\
+    \ paypal - apple_pay - google_pay\n (groupable dimension)"
   alias: payment_method

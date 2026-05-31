@@ -19,6 +19,26 @@ description: >
   - end_date supports churn and expiration analysis.
   - status indicates active, canceled, or expired subscriptions.
 
+  Business definitions:
+  - Active subscription: status='active' and end_date is null
+  - Canceled subscription: status='canceled'
+  - Expired subscription: status='expired'
+
+  Subscription churn can be analyzed using
+  status and end_date.
+
+  Common business questions:
+  - Active subscriptions
+  - Active subscribers
+  - Subscription plan distribution
+  - Subscription churn
+  - Average subscription length
+  - Revenue by subscription plan
+
+  This dataset is commonly joined to:
+  - users via user_id
+  - payments via subscription_id
+
 relationships:
   - from: user_id
     to:
@@ -33,31 +53,84 @@ columns:
 
   - name: user_id
     type: integer
-    description: Foreign key linking to the users table
+    description: >
+      Foreign key linking a subscription
+      to a user record.
 
   - name: plan
     type: string
-    description: Subscription plan (free, monthly, annual)
+    description: >
+      Subscription plan.
+
+      Typical values:
+      - free
+      - monthly
+      - annual
+
+      Used for:
+      - subscription plan analysis
+      - user segmentation
+      - revenue analysis
     alias: subscription_plan
     group_by: true
 
   - name: start_date
     type: datetime
-    description: Date when the subscription started
+    description: >
+      Date when the subscription started.
+
+      Primary date field for subscription acquisition analysis.
 
   - name: end_date
     type: datetime
-    description: Date when the subscription ended
+    description: >
+      Date when the subscription ended.
+
+      Used for:
+      - churn analysis
+      - expiration analysis
+      - subscription lifecycle analysis
+
+      Active subscriptions typically have a null end_date.
 
   - name: status
     type: string
-    description: Current subscription status
+    description: >
+      Current subscription status.
+
+      Valid values:
+      - active
+      - canceled
+      - expired
+
+      Questions referring to:
+      - active subscriptions
+      - active subscribers
+      - currently subscribed users
+
+      should use:
+
+      status='active'
     alias: subscription_status
     group_by: true
 
   - name: subscription_length_days
     type: integer
-    description: Length of subscription in days
+    description: >
+      Length of subscription in days.
+
+      Calculated as:
+
+      end_date - start_date
+
+      For active subscriptions,
+      the calculation uses the current date.
+
+      Used for:
+      - subscription lifecycle analysis
+      - retention analysis
+      - churn analysis
+      - average subscription length calculations
     expression: >
       EXTRACT(
         DAY FROM (

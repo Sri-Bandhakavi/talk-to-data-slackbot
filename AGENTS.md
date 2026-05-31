@@ -63,6 +63,11 @@ If a feature appears to require any of the above, stop and confirm scope with th
 ## Development Guidelines
 
 - **PandasAI first** — Prefer built-in multi-table agent, connectors, and semantic-layer features before custom Python analytics wrappers.
+    PandasAI version policy — This project uses PandasAI v3 exclusively.
+    Before generating or modifying PandasAI-related code, verify against the official PandasAI v3 documentation.
+    Do not use deprecated PandasAI v2 APIs, examples, tutorials, or code patterns.
+    When updating agent registration, dataset loading, semantic models, connectors, or Agent construction, prefer documented v3 approaches over generated code.
+    
 - **Minimal abstractions** — Extend approved subsystems rather than introducing new top-level packages or orchestration layers.
 - **Dependencies** — Add libraries only when PandasAI or the Slack/PostgreSQL stack cannot cover the need. Document the reason in the PR or commit message.
 - **Secrets** — Use environment variables only (`.env` locally, keys documented in `.env.example`). Never commit credentials.

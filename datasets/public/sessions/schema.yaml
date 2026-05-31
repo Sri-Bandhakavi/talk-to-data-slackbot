@@ -12,30 +12,51 @@ description: 'User engagement and activity session dataset.
 
   Business rules and semantics: - Each row represents a user session. - session_date
   is the primary date field for engagement analysis. - duration_minutes represents
-  total session duration. - activity_type categorizes the session activity.
+  total session duration. - session_hours represents session duration expressed in
+  hours. - activity_type categorizes the session activity.
+
+  Common business questions: - Total sessions - Average session duration - Average
+  session hours - User engagement by activity type - User engagement trends over time
+
+  This dataset is commonly joined to: - users via user_id - subscriptions through
+  users
 
 
   Join context:
 
-  Joins to users on user_id.'
+  user_id -> users.user_id'
 columns:
 - name: session_id
   type: integer
   description: Unique identifier for the session
 - name: user_id
   type: integer
-  description: Foreign key linking to the users table
+  description: 'Foreign key linking each session to a user record.
+
+    '
 - name: session_date
   type: datetime
   description: Date and time when the session occurred
 - name: duration_minutes
   type: integer
-  description: Duration of the session in minutes
+  description: 'Duration of the session in minutes.
+
+    Used for: - session length analysis - user engagement analysis - average session
+    duration calculations
+
+    '
 - name: session_hours
   type: float
-  description: Session duration expressed in hours
+  description: 'Session duration expressed in hours.
+
+    Used for: - average session hours calculations - engagement analysis - comparisons
+    of user activity levels
+
+    '
   expression: duration_minutes / 60.0
 - name: activity_type
   type: string
-  description: Type of activity performed during the session (groupable dimension)
+  description: "Type of activity performed during the session.\nTypical values: -\
+    \ browse - listen - read\nUsed for: - engagement analysis - activity distribution\
+    \ analysis - user behavior analysis\n (groupable dimension)"
   alias: engagement_type

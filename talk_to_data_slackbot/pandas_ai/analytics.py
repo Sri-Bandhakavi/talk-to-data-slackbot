@@ -159,9 +159,13 @@ def _format_join_hint(relationships: list[RelationshipDefinition]) -> str:
         return ""
 
     lines = [
-        f"Joins to {relationship.to.dataset} on {relationship.from_column}."
+        (
+            f"{relationship.from_column} -> "
+            f"{relationship.to.dataset}.{relationship.to.column}"
+        )
         for relationship in relationships
     ]
+
     return "Join context:\n" + "\n".join(lines)
 
 
