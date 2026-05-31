@@ -13,6 +13,12 @@ class Settings(BaseSettings):
 
     database_url: str = Field(..., validation_alias="DATABASE_URL")
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
+    openai_api_key: str | None = Field(
+        default=None, validation_alias="OPENAI_API_KEY"
+    )
+    pandasai_model: str = Field(
+        default="gpt-4o-mini", validation_alias="PANDASAI_MODEL"
+    )
 
 
 @lru_cache
