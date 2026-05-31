@@ -1,0 +1,41 @@
+name: sessions
+source:
+  type: postgres
+  connection:
+    host: dpg-d35pib0dl3ps7394mc4g-a.oregon-postgres.render.com
+    port: 5432
+    database: beam_neb0
+    user: students
+    password: CohortApril2026
+  table: sessions
+description: 'User engagement and activity session dataset.
+
+  Business rules and semantics: - Each row represents a user session. - session_date
+  is the primary date field for engagement analysis. - duration_minutes represents
+  total session duration. - activity_type categorizes the session activity.
+
+
+  Join context:
+
+  Joins to users on user_id.'
+columns:
+- name: session_id
+  type: integer
+  description: Unique identifier for the session
+- name: user_id
+  type: integer
+  description: Foreign key linking to the users table
+- name: session_date
+  type: datetime
+  description: Date and time when the session occurred
+- name: duration_minutes
+  type: integer
+  description: Duration of the session in minutes
+- name: session_hours
+  type: float
+  description: Session duration expressed in hours
+  expression: duration_minutes / 60.0
+- name: activity_type
+  type: string
+  description: Type of activity performed during the session (groupable dimension)
+  alias: engagement_type
