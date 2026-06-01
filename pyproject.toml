@@ -16,6 +16,7 @@ dependencies = [
     "pandasai-litellm>=0.0.1",
     "litellm==1.79.0",
     "pandasai-sql[postgres]>=0.1.7",
+    "slack-bolt>=1.28,<2",
 ]
 
 [project.optional-dependencies]
