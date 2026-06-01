@@ -1,0 +1,28 @@
+{
+  "token": "XXYYZZ",
+  "team_id": "T0123456789",
+  "api_app_id": "A0123456789",
+  "type": "event_callback",
+  "event_id": "Ev0123456789012345678903",
+  "event_time": 1710000002,
+  "authorizations": [
+    {
+      "enterprise_id": null,
+      "team_id": "T0123456789",
+      "user_id": "U0123456789",
+      "is_bot": false,
+      "is_enterprise_install": false
+    }
+  ],
+  "is_ext_shared_channel": false,
+  "event_context": "4-ghi789",
+  "event": {
+    "type": "app_mention",
+    "user": "U0123456789",
+    "text": "<@U0BOTUSER123>   ",
+    "ts": "1710000002.000100",
+    "channel": "C0123456789",
+    "event_ts": "1710000002.000100",
+    "team": "T0123456789"
+  }
+}

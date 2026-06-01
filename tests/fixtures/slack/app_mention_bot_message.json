@@ -1,0 +1,30 @@
+{
+  "token": "XXYYZZ",
+  "team_id": "T0123456789",
+  "api_app_id": "A0123456789",
+  "type": "event_callback",
+  "event_id": "Ev0123456789012345678902",
+  "event_time": 1710000001,
+  "authorizations": [
+    {
+      "enterprise_id": null,
+      "team_id": "T0123456789",
+      "user_id": "U0BOTUSER123",
+      "is_bot": true,
+      "is_enterprise_install": false
+    }
+  ],
+  "is_ext_shared_channel": false,
+  "event_context": "4-def456",
+  "event": {
+    "type": "app_mention",
+    "subtype": "bot_message",
+    "bot_id": "B0123456789",
+    "user": "U0BOTUSER123",
+    "text": "<@U0BOTUSER123> Automated status update.",
+    "ts": "1710000001.000100",
+    "channel": "C0123456789",
+    "event_ts": "1710000001.000100",
+    "team": "T0123456789"
+  }
+}
