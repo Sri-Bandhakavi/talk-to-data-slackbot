@@ -32,9 +32,14 @@ def test_build_llm_creates_litellm_from_settings(llm_settings: Settings) -> None
         assert llm is mock_instance
 
 
-def test_build_llm_missing_api_key_raises(settings_env: None) -> None:
+def test_build_llm_missing_api_key_raises(
+    settings_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    get_settings.cache_clear()
+
     with pytest.raises(LLMConfigurationError, match="OPENAI_API_KEY"):
-        build_llm(Settings())
+        build_llm(Settings(_env_file=None))
 
 
 def test_build_llm_blank_api_key_raises(

@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from talk_to_data_slackbot.pandas_ai.analytics import AgentResult
+
+MAX_FALLBACK_TEXT_CHARS = 3900
+MAX_BLOCK_TEXT_CHARS = 2900
+_TRUNCATION_SUFFIX = "\n\n_(Results truncated for Slack.)_"
+_EMPTY_RESULT_MESSAGE = "No results returned."
+_CHART_MESSAGE = "I've generated a chart for your question."
+
+
+@dataclass(frozen=True)
+class FormattedMessage:
+    """Slack-ready payload produced by Formatter for Router and Intake."""
+
+    text: str
+    blocks: list[dict[str, Any]] | None = None
+    chart_path: str | None = None
+
+
+def format_response(result: AgentResult) -> FormattedMessage:
+    """Map an ``AgentResult`` into a Slack-safe ``FormattedMessage``."""
+    if not result.success or result.result_type == "error":
+        return _format_error(result)
+
+    if result.result_type == "chart":
+        return _format_chart(result)
+
+    body = _format_success_body(result)
+    if not body.strip():
+        body = _EMPTY_RESULT_MESSAGE
+
+    block_text = _truncate(body, MAX_BLOCK_TEXT_CHARS)
+    fallback_text = _truncate(body, MAX_FALLBACK_TEXT_CHARS)
+
+    return FormattedMessage(
+        text=fallback_text,
+        blocks=[_section_block(block_text)],
+    )
+
+
+def _format_error(result: AgentResult) -> FormattedMessage:
+    message = str(result.value).strip() or _EMPTY_RESULT_MESSAGE
+    block_text = _truncate(message, MAX_BLOCK_TEXT_CHARS)
+    fallback_text = _truncate(message, MAX_FALLBACK_TEXT_CHARS)
+
+    return FormattedMessage(
+        text=fallback_text,
+        blocks=[_section_block(block_text)],
+    )
+
+
+def _format_chart(result: AgentResult) -> FormattedMessage:
+    chart_path = str(result.value).strip() or None
+    block_text = _truncate(_CHART_MESSAGE, MAX_BLOCK_TEXT_CHARS)
+
+    return FormattedMessage(
+        text=_CHART_MESSAGE,
+        blocks=[_section_block(block_text)],
+        chart_path=chart_path,
+    )
+
+
+def _format_success_body(result: AgentResult) -> str:
+    value = str(result.value)
+
+    if result.result_type == "dataframe":
+        return f"```\n{value}\n```"
+
+    return value
+
+
+def _section_block(text: str) -> dict[str, Any]:
+    return {
+        "type": "section",
+        "text": {"type": "mrkdwn", "text": text},
+    }
+
+
+def _truncate(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+
+    suffix_budget = len(_TRUNCATION_SUFFIX)
+    if max_chars <= suffix_budget:
+        return text[:max_chars]
+
+    return text[: max_chars - suffix_budget] + _TRUNCATION_SUFFIX

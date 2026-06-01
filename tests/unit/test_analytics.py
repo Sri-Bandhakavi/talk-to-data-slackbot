@@ -98,7 +98,7 @@ def test_subscriptions_model_normalizes_expression_and_join_hint() -> None:
 
     assert kwargs.path == "public/subscriptions"
     assert "Join context:" in kwargs.description
-    assert "Joins to users on user_id." in kwargs.description
+    assert "user_id -> users.user_id" in kwargs.description
     assert "relations" not in kwargs.as_dict()
     assert "relationships" not in kwargs.as_dict()
 
