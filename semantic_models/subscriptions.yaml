@@ -4,11 +4,11 @@ source:
   type: postgres
   table: subscriptions
   connection:
-    host: dpg-d35pib0dl3ps7394mc4g-a.oregon-postgres.render.com
+    host: localhost
     port: 5432
-    user: students
-    password: CohortApril2026
-    database: beam_neb0
+    user: test
+    password: test
+    database: testdb
 
 description: >
   Tracks user subscriptions and subscription lifecycle activity.

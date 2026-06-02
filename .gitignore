@@ -8,3 +8,4 @@ dist/
 build/
 pandasai.log
 exports/
+datasets/
