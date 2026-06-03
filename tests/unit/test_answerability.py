@@ -30,7 +30,7 @@ def _assess(question: str, repo_lexicon):
         "churn by region",
     ],
 )
-def test_assess_answerability_accepts_supported_questions(
+def test_assess_answerability_accepts_supported_business_questions(
     question: str,
     repo_lexicon,
 ) -> None:
@@ -95,3 +95,61 @@ def test_reject_sqrt_banana_is_out_of_domain(repo_lexicon) -> None:
 
     assert assessment.answerable is False
     assert assessment.kind is RejectionKind.OUT_OF_DOMAIN
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Plot signup counts by region and platform",
+        "Show revenue by region as a chart",
+        "Graph subscriptions by region",
+        "Visualize revenue by platform",
+    ],
+)
+def test_assess_answerability_accepts_visualization_vocabulary(
+    question: str,
+    repo_lexicon,
+) -> None:
+    assessment = _assess(question, repo_lexicon)
+
+    assert assessment.answerable is True
+    assert assessment.kind is RejectionKind.ANSWERABLE
+    assert assessment.unmatched_concepts == ()
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Show trend of subscriptions by month",
+        "Show monthly revenue by region",
+        "Show quarterly subscriptions trend",
+        "Show revenue by year and quarter",
+    ],
+)
+def test_assess_answerability_accepts_time_grouping_vocabulary(
+    question: str,
+    repo_lexicon,
+) -> None:
+    assessment = _assess(question, repo_lexicon)
+
+    assert assessment.answerable is True
+    assert assessment.kind is RejectionKind.ANSWERABLE
+    assert assessment.unmatched_concepts == ()
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Total revenue by region",
+        "Show signup counts by platform",
+    ],
+)
+def test_assess_answerability_accepts_aggregation_vocabulary(
+    question: str,
+    repo_lexicon,
+) -> None:
+    assessment = _assess(question, repo_lexicon)
+
+    assert assessment.answerable is True
+    assert assessment.kind is RejectionKind.ANSWERABLE
+    assert assessment.unmatched_concepts == ()

@@ -6,6 +6,9 @@ from enum import Enum
 from pathlib import Path
 
 from talk_to_data_slackbot.pandas_ai.answerability_synonyms import apply_synonyms
+from talk_to_data_slackbot.pandas_ai.answerability_vocabulary import (
+    ANALYTICS_REQUEST_VOCABULARY,
+)
 from talk_to_data_slackbot.pandas_ai.concept_lexicon import (
     ConceptLexicon,
     build_concept_lexicon,
@@ -199,7 +202,7 @@ def _match_question(
 
     unmatched_tokens: list[str] = []
     for token in _TOKEN_PATTERN.findall(remaining):
-        if token in _STOPWORDS:
+        if token in _STOPWORDS or token in ANALYTICS_REQUEST_VOCABULARY:
             continue
         if token in lexicon.terms:
             matched.append(token)
