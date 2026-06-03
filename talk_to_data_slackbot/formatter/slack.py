@@ -11,6 +11,10 @@ _TRUNCATION_SUFFIX = "\n\n_(Results truncated for Slack.)_"
 _EMPTY_RESULT_MESSAGE = "No results returned."
 _CHART_MESSAGE = "I've generated a chart for your question."
 
+_TEXT_HEADER = "*Answer*"
+_TABLE_HEADER = "*Results*"
+_CHART_HEADER = "*Chart*"
+
 
 @dataclass(frozen=True)
 class FormattedMessage:
@@ -30,9 +34,6 @@ def format_response(result: AgentResult) -> FormattedMessage:
         return _format_chart(result)
 
     body = _format_success_body(result)
-    if not body.strip():
-        body = _EMPTY_RESULT_MESSAGE
-
     block_text = _truncate(body, MAX_BLOCK_TEXT_CHARS)
     fallback_text = _truncate(body, MAX_FALLBACK_TEXT_CHARS)
 
@@ -55,22 +56,28 @@ def _format_error(result: AgentResult) -> FormattedMessage:
 
 def _format_chart(result: AgentResult) -> FormattedMessage:
     chart_path = str(result.value).strip() or None
-    block_text = _truncate(_CHART_MESSAGE, MAX_BLOCK_TEXT_CHARS)
+    body = f"{_CHART_HEADER}\n\n{_CHART_MESSAGE}"
+    block_text = _truncate(body, MAX_BLOCK_TEXT_CHARS)
+    fallback_text = _truncate(body, MAX_FALLBACK_TEXT_CHARS)
 
     return FormattedMessage(
-        text=_CHART_MESSAGE,
+        text=fallback_text,
         blocks=[_section_block(block_text)],
         chart_path=chart_path,
     )
 
 
 def _format_success_body(result: AgentResult) -> str:
-    value = str(result.value)
-
     if result.result_type == "dataframe":
-        return f"```\n{value}\n```"
+        table = str(result.value).strip()
+        if not table:
+            return _EMPTY_RESULT_MESSAGE
+        return f"{_TABLE_HEADER}\n\n```{table}```"
 
-    return value
+    text = str(result.value).strip()
+    if not text:
+        return _EMPTY_RESULT_MESSAGE
+    return f"{_TEXT_HEADER}\n\n{text}"
 
 
 def _section_block(text: str) -> dict[str, Any]:

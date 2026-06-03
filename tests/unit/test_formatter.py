@@ -24,15 +24,16 @@ def test_format_text_success() -> None:
     )
 
     formatted = format_response(result)
+    expected_body = "*Answer*\n\nThere are 42 users signed up."
 
     assert formatted == FormattedMessage(
-        text="There are 42 users signed up.",
+        text=expected_body,
         blocks=[
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": "There are 42 users signed up.",
+                    "text": expected_body,
                 },
             }
         ],
@@ -51,7 +52,7 @@ def test_format_dataframe_success() -> None:
     )
 
     formatted = format_response(result)
-    expected_body = f"```\n{table}\n```"
+    expected_body = f"*Results*\n\n```{table}```"
 
     assert formatted.text == expected_body
     assert _block_text(formatted) == expected_body
@@ -67,10 +68,11 @@ def test_format_chart_success() -> None:
     )
 
     formatted = format_response(result)
+    expected_body = "*Chart*\n\nI've generated a chart for your question."
 
-    assert formatted.text == "I've generated a chart for your question."
+    assert formatted.text == expected_body
     assert formatted.chart_path == "/tmp/signups_chart.png"
-    assert _block_text(formatted) == "I've generated a chart for your question."
+    assert _block_text(formatted) == expected_body
 
 
 def test_format_error_result() -> None:
@@ -120,9 +122,10 @@ def test_format_truncates_long_text_for_fallback_and_block() -> None:
 
     assert len(formatted.text) <= MAX_FALLBACK_TEXT_CHARS
     assert formatted.text.endswith(_TRUNCATION_SUFFIX)
-    assert formatted.text.startswith("A")
+    assert "*Answer*" in formatted.text
+    assert formatted.text.startswith("*Answer*\n\nA")
 
     block_text = _block_text(formatted)
     assert len(block_text) <= MAX_BLOCK_TEXT_CHARS
     assert block_text.endswith(_TRUNCATION_SUFFIX)
-    assert block_text.startswith("A")
+    assert block_text.startswith("*Answer*\n\nA")
