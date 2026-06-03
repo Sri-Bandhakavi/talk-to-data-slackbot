@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from slack_bolt import App
 
 from talk_to_data_slackbot.config import Settings, get_settings
+from talk_to_data_slackbot.formatter import FormattedMessage
 from talk_to_data_slackbot.intake.dedupe import InMemoryEventDeduper
 from talk_to_data_slackbot.intake.parser import intake_slack_payload
 from talk_to_data_slackbot.router import handle_analytics_request
@@ -12,6 +14,7 @@ from talk_to_data_slackbot.router import handle_analytics_request
 _FALLBACK_ERROR_MESSAGE = (
     "Something went wrong while running your analytics question. Please try again."
 )
+_TIMED_RESPONSE_PREFIXES = ("*Answer*", "*Results*", "*Chart*")
 
 _deduper = InMemoryEventDeduper()
 
@@ -38,12 +41,17 @@ def _on_app_mention(
     if envelope is None:
         return
 
+    start = time.perf_counter()
     try:
         formatted = handle_analytics_request(envelope)
     except Exception:
         logger.exception("Analytics request failed")
         say(text=_FALLBACK_ERROR_MESSAGE, thread_ts=envelope.thread_ts)
         return
+
+    elapsed = time.perf_counter() - start
+    if _should_append_timing(formatted):
+        formatted = _append_timing_footer(formatted, elapsed)
 
     say(
         text=formatted.text,
@@ -60,6 +68,49 @@ def _on_app_mention(
             )
         except Exception:
             logger.exception("Chart upload failed")
+
+
+def _should_append_timing(formatted: FormattedMessage) -> bool:
+    """Return True for successful text, table, and chart responses from Formatter."""
+    if formatted.chart_path:
+        return True
+    return formatted.text.startswith(_TIMED_RESPONSE_PREFIXES)
+
+
+def _format_timing_footer(elapsed_seconds: float) -> str:
+    return f"\n\n⏱ Completed in {elapsed_seconds:.1f}s"
+
+
+def _append_timing_footer(
+    formatted: FormattedMessage,
+    elapsed_seconds: float,
+) -> FormattedMessage:
+    footer = _format_timing_footer(elapsed_seconds)
+    new_text = formatted.text + footer
+    new_blocks: list[dict[str, Any]] | None = None
+
+    if formatted.blocks:
+        new_blocks = []
+        for index, block in enumerate(formatted.blocks):
+            if index == 0 and block.get("type") == "section":
+                text_obj = block.get("text", {})
+                new_blocks.append(
+                    {
+                        **block,
+                        "text": {
+                            **text_obj,
+                            "text": text_obj.get("text", "") + footer,
+                        },
+                    }
+                )
+            else:
+                new_blocks.append(block)
+
+    return FormattedMessage(
+        text=new_text,
+        blocks=new_blocks,
+        chart_path=formatted.chart_path,
+    )
 
 
 def _validate_slack_settings(settings: Settings) -> None:

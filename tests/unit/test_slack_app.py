@@ -84,21 +84,24 @@ def test_on_app_mention_ignores_when_intake_returns_none(
     mock_say.assert_not_called()
 
 
+@patch("talk_to_data_slackbot.intake.slack_app.time.perf_counter", side_effect=[0.0, 1.4])
 @patch("talk_to_data_slackbot.intake.slack_app.handle_analytics_request")
 @patch("talk_to_data_slackbot.intake.slack_app.intake_slack_payload")
 def test_on_app_mention_calls_router_and_say_on_success(
     mock_intake: MagicMock,
     mock_router: MagicMock,
+    mock_perf_counter: MagicMock,
 ) -> None:
     mock_intake.return_value = TEST_ENVELOPE
+    body_text = "*Answer*\n\nThere are 42 users signed up last month."
     mock_router.return_value = FormattedMessage(
-        text="There are 42 users signed up last month.",
+        text=body_text,
         blocks=[
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": "There are 42 users signed up last month.",
+                    "text": body_text,
                 },
             }
         ],
@@ -113,11 +116,11 @@ def test_on_app_mention_calls_router_and_say_on_success(
     )
 
     mock_router.assert_called_once_with(TEST_ENVELOPE)
-    mock_say.assert_called_once_with(
-        text="There are 42 users signed up last month.",
-        blocks=mock_router.return_value.blocks,
-        thread_ts=TEST_ENVELOPE.thread_ts,
-    )
+    mock_say.assert_called_once()
+    call_kwargs = mock_say.call_args.kwargs
+    assert call_kwargs["text"] == body_text + "\n\n⏱ Completed in 1.4s"
+    assert call_kwargs["blocks"][0]["text"]["text"] == call_kwargs["text"]
+    assert call_kwargs["thread_ts"] == TEST_ENVELOPE.thread_ts
 
 
 @patch("talk_to_data_slackbot.intake.slack_app.handle_analytics_request")
@@ -181,6 +184,7 @@ def test_on_app_mention_posts_formatted_error_without_router_raise(
         thread_ts=TEST_ENVELOPE.thread_ts,
     )
     assert "RuntimeError" not in mock_say.call_args.kwargs["text"]
+    assert "⏱ Completed" not in mock_say.call_args.kwargs["text"]
 
 
 @patch("talk_to_data_slackbot.intake.slack_app.handle_analytics_request")
@@ -207,28 +211,35 @@ def test_on_app_mention_fallback_say_when_router_raises(
         thread_ts=TEST_ENVELOPE.thread_ts,
     )
     assert "RuntimeError" not in mock_say.call_args.kwargs["text"]
+    assert "⏱ Completed" not in mock_say.call_args.kwargs["text"]
 
 
+@patch("talk_to_data_slackbot.intake.slack_app.time.perf_counter", side_effect=[10.0, 12.5])
 @patch("talk_to_data_slackbot.intake.slack_app.handle_analytics_request")
 @patch("talk_to_data_slackbot.intake.slack_app.intake_slack_payload")
 def test_on_app_mention_uploads_chart_when_chart_path_set(
     mock_intake: MagicMock,
     mock_router: MagicMock,
+    mock_perf_counter: MagicMock,
 ) -> None:
     mock_intake.return_value = TEST_ENVELOPE
+    body_text = "*Chart*\n\nI've generated a chart for your question."
     mock_router.return_value = FormattedMessage(
-        text="I've generated a chart for your question.",
+        text=body_text,
         chart_path="/tmp/test_chart.png",
     )
     mock_client = MagicMock()
+    mock_say = MagicMock()
 
     _on_app_mention(
         body=_load_slack_fixture("app_mention_valid.json"),
-        say=MagicMock(),
+        say=mock_say,
         client=mock_client,
         logger=MagicMock(),
     )
 
+    mock_say.assert_called_once()
+    assert mock_say.call_args.kwargs["text"].endswith("⏱ Completed in 2.5s")
     mock_client.files_upload_v2.assert_called_once_with(
         channel=TEST_ENVELOPE.channel_id,
         file="/tmp/test_chart.png",
@@ -254,3 +265,35 @@ def test_on_app_mention_skips_upload_when_chart_path_none(
     )
 
     mock_client.files_upload_v2.assert_not_called()
+
+
+@patch("talk_to_data_slackbot.intake.slack_app.time.perf_counter", side_effect=[0.0, 0.05])
+@patch("talk_to_data_slackbot.intake.slack_app.handle_analytics_request")
+@patch("talk_to_data_slackbot.intake.slack_app.intake_slack_payload")
+def test_on_app_mention_appends_timing_for_table_response(
+    mock_intake: MagicMock,
+    mock_router: MagicMock,
+    mock_perf_counter: MagicMock,
+) -> None:
+    mock_intake.return_value = TEST_ENVELOPE
+    table = "country  users\nUS       10"
+    body_text = f"*Results*\n\n```{table}```"
+    mock_router.return_value = FormattedMessage(
+        text=body_text,
+        blocks=[
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": body_text},
+            }
+        ],
+    )
+    mock_say = MagicMock()
+
+    _on_app_mention(
+        body=_load_slack_fixture("app_mention_valid.json"),
+        say=mock_say,
+        client=MagicMock(),
+        logger=MagicMock(),
+    )
+
+    assert mock_say.call_args.kwargs["text"] == body_text + "\n\n⏱ Completed in 0.1s"
