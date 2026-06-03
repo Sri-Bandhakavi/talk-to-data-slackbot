@@ -1,10 +1,18 @@
-from talk_to_data_slackbot.formatter import FormattedMessage, format_response
+from talk_to_data_slackbot.formatter import (
+    FormattedMessage,
+    format_guardrail_rejection,
+    format_response,
+)
 from talk_to_data_slackbot.formatter.slack import (
     MAX_BLOCK_TEXT_CHARS,
     MAX_FALLBACK_TEXT_CHARS,
     _TRUNCATION_SUFFIX,
 )
 from talk_to_data_slackbot.pandas_ai.analytics import AgentResult
+from talk_to_data_slackbot.pandas_ai.answerability import (
+    RejectionKind,
+    assess_answerability,
+)
 
 
 def _block_text(formatted: FormattedMessage) -> str:
@@ -107,6 +115,70 @@ def test_format_empty_value() -> None:
 
     assert formatted.text == "No results returned."
     assert _block_text(formatted) == "No results returned."
+
+
+def _guardrail_body(formatted: FormattedMessage) -> str:
+    return _block_text(formatted)
+
+
+def test_format_guardrail_rejection_out_of_domain_sqrt_banana() -> None:
+    assessment = assess_answerability("calculate the square root of banana")
+    formatted = format_guardrail_rejection(assessment)
+
+    assert assessment.kind is RejectionKind.OUT_OF_DOMAIN
+    expected = (
+        "*Can't answer from available data*\n\n"
+        "I can't answer that from the business data available in this workspace.\n\n"
+        "Here are some things I can help with:\n"
+        "• Revenue and payment trends\n"
+        "• Active subscriptions and churn\n"
+        "• Users and signups by region or platform\n"
+        "• Session engagement and duration"
+    )
+    assert formatted.text == expected
+    assert _guardrail_body(formatted) == expected
+    assert "banana" not in formatted.text
+    assert "Unrecognized" not in formatted.text
+
+
+def test_format_guardrail_rejection_concept_mismatch_satisfaction_category() -> None:
+    question = "Show average customer satisfaction score by product category"
+    assessment = assess_answerability(question)
+    formatted = format_guardrail_rejection(assessment)
+
+    assert assessment.kind is RejectionKind.CONCEPT_MISMATCH
+    expected = (
+        "*Can't answer from available data*\n\n"
+        "I can't answer that from the business data available in this workspace.\n\n"
+        "Unrecognized in your question: category, product, satisfaction, score\n\n"
+        "Here are some questions I can answer with the current data:\n"
+        "• Revenue by region or subscription plan\n"
+        "• Churn and active subscriptions\n"
+        "• Average subscription length\n"
+        "• Users and signups by region or platform"
+    )
+    assert formatted.text == expected
+    assert _guardrail_body(formatted) == expected
+
+
+def test_format_guardrail_rejection_concept_mismatch_paying_customers() -> None:
+    question = "Show paying customers by region"
+    assessment = assess_answerability(question)
+    formatted = format_guardrail_rejection(assessment)
+
+    assert assessment.kind is RejectionKind.CONCEPT_MISMATCH
+    expected = (
+        "*Can't answer from available data*\n\n"
+        "I can't answer that from the business data available in this workspace.\n\n"
+        "Unrecognized in your question: paying\n\n"
+        "Here are some questions I can answer with the current data:\n"
+        "• Revenue by region or subscription plan\n"
+        "• Churn and active subscriptions\n"
+        "• Average subscription length\n"
+        "• Users and signups by region or platform"
+    )
+    assert formatted.text == expected
+    assert _guardrail_body(formatted) == expected
 
 
 def test_format_truncates_long_text_for_fallback_and_block() -> None:

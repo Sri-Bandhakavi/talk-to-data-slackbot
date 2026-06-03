@@ -8,6 +8,11 @@ from talk_to_data_slackbot.intake.envelope import RequestEnvelope
 
 _SUPPORTED_EVENT_TYPE = "app_mention"
 _USER_MENTION_PATTERN = re.compile(r"<@[^>]+>")
+_PLAIN_AT_MENTION_PATTERN = re.compile(
+    r"^\s*@(?:[A-Za-z0-9_.-]+(?:\s+[A-Za-z0-9_.-]+)*)\s*"
+)
+# Residual short bot display label after a bracket mention (e.g. "<@UBOT> agent Show ...").
+_LEADING_BOT_LABEL_PATTERN = re.compile(r"^\s*agent\s+", re.IGNORECASE)
 
 
 def parse_slack_event(payload: dict[str, Any]) -> RequestEnvelope | None:
@@ -89,5 +94,7 @@ def _unwrap_payload(payload: dict[str, Any]) -> tuple[dict[str, Any], str | None
 
 
 def _clean_question_text(raw_text: str) -> str:
-    without_mentions = _USER_MENTION_PATTERN.sub("", raw_text)
-    return without_mentions.strip()
+    text = _USER_MENTION_PATTERN.sub("", raw_text)
+    text = _PLAIN_AT_MENTION_PATTERN.sub("", text)
+    text = _LEADING_BOT_LABEL_PATTERN.sub("", text)
+    return text.strip()

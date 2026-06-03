@@ -1,6 +1,9 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 from talk_to_data_slackbot.intake import (
     InMemoryEventDeduper,
@@ -8,6 +11,7 @@ from talk_to_data_slackbot.intake import (
     intake_slack_payload,
     parse_slack_event,
 )
+from talk_to_data_slackbot.pandas_ai.answerability import assess_answerability
 
 SLACK_FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "slack"
 
@@ -91,3 +95,51 @@ def test_intake_slack_payload_missing_event_id_returns_none() -> None:
     deduper = InMemoryEventDeduper()
 
     assert intake_slack_payload(payload, deduper) is None
+
+
+def _payload_with_event_text(text: str) -> dict[str, Any]:
+    payload = deepcopy(_load_slack_fixture("app_mention_valid.json"))
+    payload["event"]["text"] = text
+    return payload
+
+
+@pytest.mark.parametrize(
+    ("raw_text", "expected_question"),
+    [
+        (
+            "<@UBOT> agent Show revenue by geography",
+            "Show revenue by geography",
+        ),
+        (
+            "<@UBOT> agent Show active subscriptions by region",
+            "Show active subscriptions by region",
+        ),
+    ],
+)
+def test_parse_strips_residual_bot_label_after_bracket_mention(
+    raw_text: str,
+    expected_question: str,
+) -> None:
+    envelope = parse_slack_event(_payload_with_event_text(raw_text))
+
+    assert envelope is not None
+    assert envelope.text == expected_question
+
+
+@pytest.mark.parametrize(
+    "expected_question",
+    [
+        "Show revenue by geography",
+        "Show active subscriptions by region",
+    ],
+)
+def test_parsed_question_passes_guardrail_after_bot_label_strip(
+    expected_question: str,
+) -> None:
+    raw_text = f"<@UBOT> agent {expected_question}"
+    envelope = parse_slack_event(_payload_with_event_text(raw_text))
+
+    assert envelope is not None
+    assessment = assess_answerability(envelope.text)
+    assert assessment.answerable is True
+    assert assessment.unmatched_concepts == ()

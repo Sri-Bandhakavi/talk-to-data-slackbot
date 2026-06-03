@@ -4,6 +4,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from talk_to_data_slackbot.pandas_ai.analytics import AgentResult
+from talk_to_data_slackbot.pandas_ai.answerability import (
+    AnswerabilityAssessment,
+    RejectionKind,
+)
 
 MAX_FALLBACK_TEXT_CHARS = 3900
 MAX_BLOCK_TEXT_CHARS = 2900
@@ -14,6 +18,22 @@ _CHART_MESSAGE = "I've generated a chart for your question."
 _TEXT_HEADER = "*Answer*"
 _TABLE_HEADER = "*Results*"
 _CHART_HEADER = "*Chart*"
+_GUARDRAIL_HEADER = "*Can't answer from available data*"
+_GUARDRAIL_LEAD = (
+    "I can't answer that from the business data available in this workspace."
+)
+_OOD_SUGGESTION_BULLETS = (
+    "• Revenue and payment trends",
+    "• Active subscriptions and churn",
+    "• Users and signups by region or platform",
+    "• Session engagement and duration",
+)
+_CONCEPT_SUGGESTION_BULLETS = (
+    "• Revenue by region or subscription plan",
+    "• Churn and active subscriptions",
+    "• Average subscription length",
+    "• Users and signups by region or platform",
+)
 
 
 @dataclass(frozen=True)
@@ -23,6 +43,18 @@ class FormattedMessage:
     text: str
     blocks: list[dict[str, Any]] | None = None
     chart_path: str | None = None
+
+
+def format_guardrail_rejection(assessment: AnswerabilityAssessment) -> FormattedMessage:
+    """Format a deterministic guardrail rejection for Slack."""
+    body = _format_guardrail_rejection_body(assessment)
+    block_text = _truncate(body, MAX_BLOCK_TEXT_CHARS)
+    fallback_text = _truncate(body, MAX_FALLBACK_TEXT_CHARS)
+
+    return FormattedMessage(
+        text=fallback_text,
+        blocks=[_section_block(block_text)],
+    )
 
 
 def format_response(result: AgentResult) -> FormattedMessage:
@@ -41,6 +73,33 @@ def format_response(result: AgentResult) -> FormattedMessage:
         text=fallback_text,
         blocks=[_section_block(block_text)],
     )
+
+
+def _format_guardrail_rejection_body(assessment: AnswerabilityAssessment) -> str:
+    sections = [_GUARDRAIL_HEADER, "", _GUARDRAIL_LEAD]
+
+    if assessment.kind is RejectionKind.CONCEPT_MISMATCH and assessment.unmatched_concepts:
+        unmatched = ", ".join(assessment.unmatched_concepts)
+        sections.extend(["", f"Unrecognized in your question: {unmatched}"])
+
+    if assessment.kind is RejectionKind.OUT_OF_DOMAIN:
+        sections.extend(
+            [
+                "",
+                "Here are some things I can help with:",
+                *_OOD_SUGGESTION_BULLETS,
+            ]
+        )
+    else:
+        sections.extend(
+            [
+                "",
+                "Here are some questions I can answer with the current data:",
+                *_CONCEPT_SUGGESTION_BULLETS,
+            ]
+        )
+
+    return "\n".join(sections)
 
 
 def _format_error(result: AgentResult) -> FormattedMessage:
