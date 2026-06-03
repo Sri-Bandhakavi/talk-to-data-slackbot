@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
@@ -15,6 +16,7 @@ from talk_to_data_slackbot.pandas_ai.concept_lexicon import (
     clear_lexicon_cache,
     get_default_concept_lexicon,
 )
+from talk_to_data_slackbot.config import get_settings
 from talk_to_data_slackbot.pandas_ai.semantic_loader import load_semantic_models
 
 _STOPWORDS = frozenset(
@@ -125,6 +127,47 @@ def assess_answerability(
 ) -> AnswerabilityAssessment:
     """
     Return whether ``question`` can be answered from the semantic layer.
+
+    When ``USE_LLM_ANSWERABILITY`` is enabled, an LLM classifier runs first;
+    on failure the deterministic guardrail is used when fallback is enabled.
+    """
+    settings = get_settings()
+    if settings.use_llm_answerability:
+        from talk_to_data_slackbot.pandas_ai.answerability_classifier import (
+            AnswerabilityClassifierError,
+            assess_with_llm_classifier,
+        )
+
+        try:
+            return assess_with_llm_classifier(
+                question,
+                models_dir=models_dir,
+                settings=settings,
+            )
+        except AnswerabilityClassifierError as exc:
+            if not settings.answerability_fallback_on_error:
+                raise
+            logging.warning(
+                "LLM answerability classification failed; falling back to "
+                "deterministic guardrail: %s",
+                exc,
+            )
+
+    return _assess_deterministic(
+        question,
+        lexicon=lexicon,
+        models_dir=models_dir,
+    )
+
+
+def _assess_deterministic(
+    question: str,
+    *,
+    lexicon: ConceptLexicon | None = None,
+    models_dir: Path | None = None,
+) -> AnswerabilityAssessment:
+    """
+    Deterministic lexicon guardrail.
 
     Policy: reject if any business concept remains unmatched after synonym
     normalization and lexicon matching (precision over recall).

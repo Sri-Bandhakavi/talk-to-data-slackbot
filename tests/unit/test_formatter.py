@@ -1,5 +1,6 @@
 from talk_to_data_slackbot.formatter import (
     FormattedMessage,
+    derive_response_title,
     format_guardrail_rejection,
     format_response,
 )
@@ -46,8 +47,10 @@ def test_format_text_success() -> None:
             }
         ],
         chart_path=None,
+        title="Users Signed Up",
     )
     assert formatted.chart_path is None
+    assert formatted.title == derive_response_title(result.question)
 
 
 def test_format_dataframe_success() -> None:
@@ -65,6 +68,7 @@ def test_format_dataframe_success() -> None:
     assert formatted.text == expected_body
     assert _block_text(formatted) == expected_body
     assert formatted.chart_path is None
+    assert formatted.title == "Users Country"
 
 
 def test_format_chart_success() -> None:
@@ -81,6 +85,7 @@ def test_format_chart_success() -> None:
     assert formatted.text == expected_body
     assert formatted.chart_path == "/tmp/signups_chart.png"
     assert _block_text(formatted) == expected_body
+    assert formatted.title == "Signups Over Time"
 
 
 def test_format_error_result() -> None:
@@ -99,6 +104,7 @@ def test_format_error_result() -> None:
     )
     assert _block_text(formatted) == formatted.text
     assert formatted.chart_path is None
+    assert formatted.title is None
     assert "RuntimeError" not in formatted.text
     assert "RuntimeError" not in _block_text(formatted)
 
@@ -115,6 +121,7 @@ def test_format_empty_value() -> None:
 
     assert formatted.text == "No results returned."
     assert _block_text(formatted) == "No results returned."
+    assert formatted.title == "Empty Answer"
 
 
 def _guardrail_body(formatted: FormattedMessage) -> str:
@@ -137,6 +144,7 @@ def test_format_guardrail_rejection_out_of_domain_sqrt_banana() -> None:
     )
     assert formatted.text == expected
     assert _guardrail_body(formatted) == expected
+    assert formatted.title is None
     assert "banana" not in formatted.text
     assert "Unrecognized" not in formatted.text
 
@@ -159,6 +167,7 @@ def test_format_guardrail_rejection_concept_mismatch_satisfaction_category() -> 
     )
     assert formatted.text == expected
     assert _guardrail_body(formatted) == expected
+    assert formatted.title is None
 
 
 def test_format_guardrail_rejection_concept_mismatch_paying_customers() -> None:
@@ -179,6 +188,7 @@ def test_format_guardrail_rejection_concept_mismatch_paying_customers() -> None:
     )
     assert formatted.text == expected
     assert _guardrail_body(formatted) == expected
+    assert formatted.title is None
 
 
 def test_format_truncates_long_text_for_fallback_and_block() -> None:
@@ -201,3 +211,4 @@ def test_format_truncates_long_text_for_fallback_and_block() -> None:
     assert len(block_text) <= MAX_BLOCK_TEXT_CHARS
     assert block_text.endswith(_TRUNCATION_SUFFIX)
     assert block_text.startswith("*Answer*\n\nA")
+    assert formatted.title == "Long Answer"

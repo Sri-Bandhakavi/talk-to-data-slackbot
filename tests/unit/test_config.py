@@ -28,3 +28,27 @@ def test_get_settings_is_cached(settings_env: None) -> None:
     first = get_settings()
     second = get_settings()
     assert first is second
+
+
+def test_settings_answerability_defaults(settings_env: None) -> None:
+    settings = Settings()
+    assert settings.use_llm_answerability is False
+    assert settings.answerability_model is None
+    assert settings.answerability_timeout_seconds == 10.0
+    assert settings.answerability_fallback_on_error is True
+
+
+def test_settings_answerability_from_env(
+    settings_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("USE_LLM_ANSWERABILITY", "true")
+    monkeypatch.setenv("ANSWERABILITY_MODEL", "gpt-4o-mini")
+    monkeypatch.setenv("ANSWERABILITY_TIMEOUT_SECONDS", "15")
+    monkeypatch.setenv("ANSWERABILITY_FALLBACK_ON_ERROR", "false")
+    get_settings.cache_clear()
+
+    settings = Settings()
+    assert settings.use_llm_answerability is True
+    assert settings.answerability_model == "gpt-4o-mini"
+    assert settings.answerability_timeout_seconds == 15.0
+    assert settings.answerability_fallback_on_error is False

@@ -23,6 +23,25 @@ def build_llm(settings: Settings | None = None) -> LiteLLM:
     return LiteLLM(model=resolved.pandasai_model, api_key=api_key.strip())
 
 
+def build_answerability_llm(settings: Settings | None = None) -> LiteLLM:
+    """Construct a LiteLLM instance for the answerability classifier."""
+    resolved = settings or get_settings()
+    api_key = resolved.openai_api_key
+
+    if api_key is None or not api_key.strip():
+        raise LLMConfigurationError(
+            "OPENAI_API_KEY is required for answerability LLM setup"
+        )
+
+    model = resolved.answerability_model or resolved.pandasai_model
+    return LiteLLM(
+        model=model,
+        api_key=api_key.strip(),
+        timeout=resolved.answerability_timeout_seconds,
+        response_format={"type": "json_object"},
+    )
+
+
 def configure_llm(settings: Settings | None = None) -> LiteLLM:
     """Register the application LiteLLM instance with PandasAI global config."""
     llm = build_llm(settings)

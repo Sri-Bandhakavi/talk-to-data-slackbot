@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from talk_to_data_slackbot.formatter.response_title import derive_response_title
 from talk_to_data_slackbot.pandas_ai.analytics import AgentResult
 from talk_to_data_slackbot.pandas_ai.answerability import (
     AnswerabilityAssessment,
@@ -43,6 +44,7 @@ class FormattedMessage:
     text: str
     blocks: list[dict[str, Any]] | None = None
     chart_path: str | None = None
+    title: str | None = None
 
 
 def format_guardrail_rejection(assessment: AnswerabilityAssessment) -> FormattedMessage:
@@ -72,6 +74,7 @@ def format_response(result: AgentResult) -> FormattedMessage:
     return FormattedMessage(
         text=fallback_text,
         blocks=[_section_block(block_text)],
+        title=derive_response_title(result.question),
     )
 
 
@@ -123,6 +126,7 @@ def _format_chart(result: AgentResult) -> FormattedMessage:
         text=fallback_text,
         blocks=[_section_block(block_text)],
         chart_path=chart_path,
+        title=derive_response_title(result.question),
     )
 
 
