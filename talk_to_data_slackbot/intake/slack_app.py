@@ -8,12 +8,14 @@ from slack_bolt import App
 from talk_to_data_slackbot.config import Settings, get_settings
 from talk_to_data_slackbot.formatter import FormattedMessage
 from talk_to_data_slackbot.intake.dedupe import InMemoryEventDeduper
+from talk_to_data_slackbot.intake.envelope import RequestEnvelope
 from talk_to_data_slackbot.intake.parser import intake_slack_payload
 from talk_to_data_slackbot.router import handle_analytics_request
 
 _FALLBACK_ERROR_MESSAGE = (
     "Something went wrong while running your analytics question. Please try again."
 )
+_PROCESSING_MESSAGE = "⏳ Analyzing your question..."
 _TIMED_RESPONSE_PREFIXES = ("*Answer*", "*Results*", "*Chart*")
 
 _deduper = InMemoryEventDeduper()
@@ -41,23 +43,28 @@ def _on_app_mention(
     if envelope is None:
         return
 
+    processing_ts = _post_processing_message(client, envelope, logger)
+
     start = time.perf_counter()
     try:
         formatted = handle_analytics_request(envelope)
     except Exception:
         logger.exception("Analytics request failed")
-        say(text=_FALLBACK_ERROR_MESSAGE, thread_ts=envelope.thread_ts)
+        _deliver_slack_message(
+            client,
+            envelope,
+            say,
+            processing_ts,
+            FormattedMessage(text=_FALLBACK_ERROR_MESSAGE),
+            logger,
+        )
         return
 
     elapsed = time.perf_counter() - start
     if _should_append_timing(formatted):
         formatted = _append_timing_footer(formatted, elapsed)
 
-    say(
-        text=formatted.text,
-        blocks=formatted.blocks,
-        thread_ts=envelope.thread_ts,
-    )
+    _deliver_slack_message(client, envelope, say, processing_ts, formatted, logger)
 
     if formatted.chart_path:
         try:
@@ -68,6 +75,68 @@ def _on_app_mention(
             )
         except Exception:
             logger.exception("Chart upload failed")
+
+
+def _post_processing_message(
+    client: Any,
+    envelope: RequestEnvelope,
+    logger: Any,
+) -> str | None:
+    """Post an immediate processing indicator; return message ``ts`` for later update."""
+    try:
+        response = client.chat_postMessage(
+            channel=envelope.channel_id,
+            text=_PROCESSING_MESSAGE,
+            thread_ts=envelope.thread_ts,
+        )
+        message_ts = response.get("ts")
+        if isinstance(message_ts, str) and message_ts.strip():
+            return message_ts
+    except Exception:
+        logger.exception("Failed to post processing message")
+    return None
+
+
+def _deliver_slack_message(
+    client: Any,
+    envelope: RequestEnvelope,
+    say: Any,
+    message_ts: str | None,
+    formatted: FormattedMessage,
+    logger: Any,
+) -> None:
+    """Update the processing message in place, or fall back to ``say()``."""
+    if message_ts and _try_chat_update(client, envelope, message_ts, formatted, logger):
+        return
+
+    say(
+        text=formatted.text,
+        blocks=formatted.blocks,
+        thread_ts=envelope.thread_ts,
+    )
+
+
+def _try_chat_update(
+    client: Any,
+    envelope: RequestEnvelope,
+    message_ts: str,
+    formatted: FormattedMessage,
+    logger: Any,
+) -> bool:
+    kwargs: dict[str, Any] = {
+        "channel": envelope.channel_id,
+        "ts": message_ts,
+        "text": formatted.text,
+    }
+    if formatted.blocks is not None:
+        kwargs["blocks"] = formatted.blocks
+
+    try:
+        client.chat_update(**kwargs)
+        return True
+    except Exception:
+        logger.exception("Failed to update processing message")
+        return False
 
 
 def _should_append_timing(formatted: FormattedMessage) -> bool:
