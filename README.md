@@ -355,7 +355,35 @@ Unsupported questions are intercepted before reaching the analytics agent.
 
 ---
 
-## 13. Testing
+## 13. Advanced Analytics Examples
+
+Observed in a development Slack workspace. These advanced examples were validated through live Slack testing and demonstrate multi-table joins, revenue analysis, time-series aggregation, and multi-dimensional segmentation beyond the basic analytics examples shown above.
+
+### Revenue by Region and Subscription Plan
+
+![Revenue by Region and Subscription Plan](./docs/images/advanced-revenue-by-region-and-plan-table.png)
+
+*Demonstrates joins across users, subscriptions, and payments with simultaneous regional and subscription-plan segmentation.*
+
+---
+
+### Quarterly Revenue Trends by Subscription Plan
+
+![Quarterly Revenue Trends by Subscription Plan](./docs/images/advanced-quarterly-revenue-by-plan-line-chart.png)
+
+*Demonstrates quarterly revenue aggregation, subscription-plan segmentation, time-series analysis, and automatic chart generation from a natural-language request.*
+
+---
+
+### Quarterly Revenue Trends by Region and Subscription Plan
+
+![Quarterly Revenue Trends by Region and Subscription Plan](./docs/images/advanced-quarterly-revenue-by-region-and-plan-line-chart.png)
+
+*Demonstrates multi-table analytics across users, subscriptions, and payments with simultaneous geographic, subscription-plan, and temporal segmentation.*
+
+---
+
+## 14. Testing
 
 **Unit tests:**
 
@@ -373,7 +401,7 @@ Requires `DATABASE_URL` and a schema consistent with `semantic_models/`.
 
 ---
 
-## 14. Limitations
+## 15. Limitations
 
 The platform supports a broad range of analytics, aggregation, reporting, and visualization use cases through a semantic-model-driven interface backed by a PostgreSQL database. Current strengths include revenue analysis, subscription analytics, user acquisition trends, multi-table reporting, and chart generation directly within Slack using semantic models built on users, subscriptions, sessions, and payments data.
 
@@ -392,7 +420,7 @@ Natural-language support continues to evolve, particularly for some executive-st
 
 ---
 
-## 15. Planned Improvements
+## 16. Planned Improvements
 
 - Improved alignment between semantic models and answerability behavior
 - Improved support for executive-style business questions
@@ -403,7 +431,7 @@ Architecture remains **PandasAI v3** and the linear pipeline described in [AGENT
 
 ---
 
-## 16. Development Notes
+## 17. Development Notes
 
 - **PandasAI v3 only** — see [AGENTS.md](AGENTS.md) before changing agent code
 - **New tables:** edit `semantic_models/` first, then agent wiring
