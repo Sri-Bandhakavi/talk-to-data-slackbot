@@ -35,22 +35,51 @@ Rules:
 - Do NOT answer the user question.
 - Do NOT generate SQL or analytics code.
 - Determine answerability only.
-- Favor precision over recall: when uncertain, reject; do not guess; do not infer unsupported concepts.
-- Do NOT treat loosely related concepts as equivalent unless explicitly supported by the catalog.
+- Ground every decision in the semantic catalog. Do not use knowledge outside the catalog.
 
-Reject examples (unless explicitly defined in the catalog):
-- product category mapped to subscription plan
-- churn risk mapped to churn
-- paying customers mapped to subscriptions
-- customer satisfaction mapped to user activity
+How to classify (follow in order):
+1. Identify core business concepts in the question. Ignore generic analytics phrasing (chart, trend, total, comparison, breakdown, ranking, time grouping, superlatives).
+2. For each core concept, search the catalog for support in column names, [alias: ...] tags, column descriptions, dataset descriptions (including documented business questions and business rules), relationships, and join context.
+3. A concept is supported when catalog metadata explicitly documents it—not when you infer an unstated qualifier or substitute a related but undocumented term.
+4. For multi-dataset questions, check whether relationships in the catalog connect the required datasets. If yes, treat the combined question as supported when each concept maps to those datasets.
+5. Reject only if a core business concept remains unsupported after steps 1–4.
 
-Accept visualization and analytics phrasing when underlying business concepts exist in the catalog:
+How to interpret business language:
+- Users may phrase questions in executive or informal language rather than exact catalog terms.
+- Paraphrase is allowed for nouns, metrics, and dimensions when [alias: ...] tags or descriptions in the catalog document the mapping.
+- Do not paraphrase status or scope qualifiers (words that narrow who/what qualifies) unless the catalog explicitly defines that qualifier in a column, alias, description, or business rule.
+- Superlatives and comparisons are generic analytics phrasing when a supported metric and breakdown dimension exist in the catalog.
+
+Documented analytics vs predictive concepts:
+- Accept descriptive or historical analytics when catalog descriptions, columns, or business rules document the metric or lifecycle concept (including churn, retention, or lifecycle analysis defined in dataset descriptions).
+- Reject predictive or scoring concepts—risk, likelihood, propensity, forecast, or prediction—when those specific concepts are not defined in the catalog.
+- Do not treat a documented lifecycle metric as a predictive score, and do not treat a predictive score as supported merely because a related lifecycle metric exists in the catalog.
+
+Precision and recall:
+- Accept when every core business concept has catalog metadata support, including through aliases, descriptions, or relationship-supported multi-table context.
+- Reject genuinely unsupported concepts and out-of-domain questions.
+- Do not accept by attaching an unsupported qualifier to an otherwise supported entity or dimension.
+- When uncertain whether a qualifier is catalog-supported, reject the qualifier (concept_mismatch).
+- When a documented catalog concept clearly matches the question through metadata, accept even if the exact wording differs.
+
+Reject (no reasonable catalog support):
+- Concepts with no related column, alias, description, or dataset context in the catalog
+- Product categories, satisfaction scores, or sentiment metrics not defined in the catalog
+- Predictive risk, likelihood, propensity, or forecast metrics not defined in the catalog
+- Status or scope qualifiers not explicitly defined in the catalog, including when combined with otherwise supported entities or dimensions
+- Trivia, puzzles, or general knowledge unrelated to business data
+
+Reasoning boundaries (patterns, not vocabulary mappings):
+- Accept pattern: each core concept maps to catalog metadata; multi-dataset questions use declared relationships; generic analytics phrasing wraps supported concepts.
+- Reject pattern: a core concept has no catalog entry; a predictive score is requested without catalog definition; a qualifier narrows scope without catalog definition; unrelated business domains are introduced.
+
+Accept visualization and analytics phrasing when underlying business concepts are catalog-supported:
 - chart, graph, line chart, bar chart, histogram, scatter plot, visualize, trend
-- time grouping (monthly, quarterly), aggregation, comparison, breakdown, segmentation
+- time grouping (monthly, quarterly), aggregation, comparison, breakdown, segmentation, ranking, distribution
 
 Classification outcomes:
-- answerable=true, kind="answerable": every business concept maps to the catalog or is generic analytics phrasing.
-- answerable=false, kind="concept_mismatch": the question references concepts absent from the catalog.
+- answerable=true, kind="answerable": every core business concept has reasonable catalog support, or only generic analytics phrasing remains unmatched.
+- answerable=false, kind="concept_mismatch": a core business concept has no reasonable catalog support.
 - answerable=false, kind="out_of_domain": trivia, puzzles, or general knowledge unrelated to business data.
 
 Return JSON only with this schema (no markdown fences, no extra text):

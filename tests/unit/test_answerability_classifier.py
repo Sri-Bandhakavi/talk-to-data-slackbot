@@ -13,7 +13,9 @@ from talk_to_data_slackbot.pandas_ai.answerability import (
 )
 from talk_to_data_slackbot.pandas_ai.answerability_classifier import (
     AnswerabilityClassifierError,
+    _CLASSIFIER_POLICY,
     assess_with_llm_classifier,
+    build_classifier_prompt,
     map_to_assessment,
     parse_classifier_response,
 )
@@ -51,6 +53,28 @@ def _valid_payload(
             "reason": reason,
         }
     )
+
+
+def test_classifier_policy_grounds_in_semantic_catalog() -> None:
+    assert "ONLY the semantic catalog below" in _CLASSIFIER_POLICY
+    assert "[alias:" in _CLASSIFIER_POLICY
+    assert "relationships" in _CLASSIFIER_POLICY
+    assert "executive" in _CLASSIFIER_POLICY.lower()
+
+
+def test_classifier_policy_avoids_hardcoded_term_mappings() -> None:
+    lowered = _CLASSIFIER_POLICY.lower()
+    assert "money →" not in lowered and "money->" not in lowered
+    assert "customers →" not in lowered and "customers->" not in lowered
+    assert "sales →" not in lowered and "sales->" not in lowered
+
+
+def test_build_classifier_prompt_includes_policy_catalog_and_question() -> None:
+    prompt = build_classifier_prompt("revenue by region", "Dataset: payments")
+
+    assert _CLASSIFIER_POLICY in prompt
+    assert "Semantic catalog:\nDataset: payments" in prompt
+    assert "Question: revenue by region" in prompt
 
 
 def test_parse_classifier_response_accepts_valid_json() -> None:

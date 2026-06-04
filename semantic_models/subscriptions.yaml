@@ -13,6 +13,19 @@ source:
 description: >
   Tracks user subscriptions and subscription lifecycle activity.
 
+  Common business questions:
+  - Subscription churn
+  - Active subscriptions
+  - Active subscribers
+  - Subscription plan distribution
+  - Average subscription length
+  - Retention analysis
+  - Revenue by subscription plan
+
+  Subscription churn and expiration analysis use status and end_date.
+  Retention and lifecycle analysis use subscription_length_days, start_date, and end_date.
+  Active subscription: status='active' and end_date is null.
+
   Business rules and semantics:
   - Each row represents a subscription associated with a user.
   - start_date is the primary date field for subscription analysis.
@@ -20,20 +33,8 @@ description: >
   - status indicates active, canceled, or expired subscriptions.
 
   Business definitions:
-  - Active subscription: status='active' and end_date is null
   - Canceled subscription: status='canceled'
   - Expired subscription: status='expired'
-
-  Subscription churn can be analyzed using
-  status and end_date.
-
-  Common business questions:
-  - Active subscriptions
-  - Active subscribers
-  - Subscription plan distribution
-  - Subscription churn
-  - Average subscription length
-  - Revenue by subscription plan
 
   This dataset is commonly joined to:
   - users via user_id
@@ -77,13 +78,17 @@ columns:
   - name: start_date
     type: datetime
     description: >
+      Subscription start date for lifecycle and activation analysis.
+
       Date when the subscription started.
 
-      Primary date field for subscription acquisition analysis.
+      Primary date field for subscription lifecycle analysis.
 
   - name: end_date
     type: datetime
     description: >
+      Subscription churn and expiration date.
+
       Date when the subscription ended.
 
       Used for:
@@ -96,6 +101,8 @@ columns:
   - name: status
     type: string
     description: >
+      Active subscriptions and current subscription status.
+
       Current subscription status.
 
       Valid values:
@@ -117,6 +124,8 @@ columns:
   - name: subscription_length_days
     type: integer
     description: >
+      Subscription length metric for retention, churn, and lifecycle analysis.
+
       Length of subscription in days.
 
       Calculated as:

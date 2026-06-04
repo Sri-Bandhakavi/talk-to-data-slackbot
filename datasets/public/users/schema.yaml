@@ -24,7 +24,9 @@ columns:
   description: Unique identifier for the user
 - name: signup_date
   type: datetime
-  description: 'Date and time when the user signed up.
+  description: 'Primary user acquisition and signup date.
+
+    Date and time when the user signed up.
 
     Primary date field for user acquisition and signup trend analysis.
 
